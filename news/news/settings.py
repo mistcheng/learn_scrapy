@@ -64,9 +64,16 @@ ROBOTSTXT_OBEY = True
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'news.pipelines.NewsPipeline': 300,
-#}
+ITEM_PIPELINES = {
+   'news.pipelines.NewsPipeline': 300,
+}
+
+# Configure my database
+MYSQL_HOST = '127.0.0.1'
+MYSQL_DBNAME = 'news'
+MYSQL_USER = 'root'
+MYSQL_PASSWD = 'Abc12345'
+
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html

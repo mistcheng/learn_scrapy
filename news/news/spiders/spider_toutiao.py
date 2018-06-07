@@ -2,29 +2,24 @@ import os
 import scrapy
 from io import open
 
-class NewsSpider(scrapy.Spider):
-    name = "news"
 
-    write_path = '/Users/wind/WORK/code/learn_scrapy/data'
+class SpiderTouTiao(scrapy.Spider):
+    name = "news_toutiao"
 
     def start_requests(self):
         urls = [
-            'http://www.ifeng.com/',
+            'https://sz.lianjia.com/?utm_source=baidu&utm_medium=pinzhuan&utm_term=biaoti&utm_content=biaotimiaoshu&utm_campaign=sousuo',
         ]
         for url in urls:
             yield scrapy.Request(url=url, callback=self.parse)
 
     def parse(self, response):
         self.log('====>>>> get information from page: %s' % response.url)
-        # page = response.url.split("/")[-2]
-        # filename = 'quotes-%s.html' % page
-        # with open(filename, 'wb') as f:
-        #     f.write(response.body)
-        # self.log('Saved file %s' % filename)
 
+        news_hot_list = response.css("div.wcommonFeed > ul > li")
         news_list = response.css("div#headLineDefault > ul.FNewMTopLis > ul > li")
 
-        for item in news_list:
+        for item in news_hot_list:
             news_link = item.css('a')
             for li in news_link:
                 title = li.css('a::text').extract_first()
@@ -40,14 +35,12 @@ class NewsSpider(scrapy.Spider):
         contents = response.css('div.yc_con_txt > p')
         time = response.css('div.yc_tit > p > span::text').extract_first()
         source = response.css('div.yc_tit > p > a::text').extract_first()
-        # pic = response.css('div.yc_con_txt > p.detalPic > img::attr(src)').extract_first()
 
         if title is None:
             title = response.css('div#artical > h1::text').extract_first()
             contents = response.css('div#main_content.js_selection_area > p')
             time = response.css('div#artical_sth > p.p_time > span[itemprop="datePublished"]::text').extract_first()
             source = response.css('div#artical_sth > p.p_time > span[itemprop="publisher"] > span[itemprop="name"]> a::text').extract_first()
-            # pic = response.css('div#main_content.js_selection_area > p.detalPic > img::attr(src)').extract_first()
 
         pic = None
         for p in contents:
@@ -64,17 +57,22 @@ class NewsSpider(scrapy.Spider):
         if len(temp) > 0:
             contents_txt = '\n'.join(c for c in temp)
 
-        if title is not None:
-            # self.log('++++====>>>> %s' % title)
-            # self.log('++++====>>>> %s' % contents_txt)
-            self.log('++++====>>>> %s' % time.strip())
-            self.log('++++====>>>> %s' % source.strip())
-            self.log('++++====>>>> %s' % pic)
+        item = {'news_url': response.url,
+                'title': title,
+                'source': source,
+                'time': time,
+                'content': contents_txt,
+                'image_url': pic,
+                'video_url': pic}
 
-            # self.write_file(self.write_path, 'ifeng_top_news', contents_txt)
+        return self.valid_item(item)
 
-    def write_file(self, write_path, file_name, content):
-        file_path = os.path.join(write_path, file_name)
-        with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content)
-            self.log('Saved file %s' % file_path)
+    def valid_item(self, item):
+        for key in item.keys():
+            if item[key] is not None:
+                item[key] = item[key].strip()
+                self.log("++++====>>>> " + item[key])
+            else:
+                item[key] = 'None'
+                self.log("++++====>>>> " + item[key])
+        return item
