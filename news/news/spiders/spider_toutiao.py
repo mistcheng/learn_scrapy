@@ -1,14 +1,17 @@
-import os
+# coding=utf-8
 import scrapy
-from io import open
-
+import json
+import re
+from utils import parse_js_1
+import yaml
 
 class SpiderTouTiao(scrapy.Spider):
     name = "news_toutiao"
 
     def start_requests(self):
         urls = [
-            'https://sz.lianjia.com/?utm_source=baidu&utm_medium=pinzhuan&utm_term=biaoti&utm_content=biaotimiaoshu&utm_campaign=sousuo',
+            # 'https://www.toutiao.com/ch/news_hot/'
+            'https://www.toutiao.com/api/pc/feed/?category=news_hot&utm_source=toutiao&widen=1&max_behot_time=0&max_behot_time_tmp=0&tadrequire=true&as=A1E51BE2660392B&cp=5B26B379327B3E1&_signature=y44DiAAAkLB0-PJu.D5-QMuOA5'
         ]
         for url in urls:
             yield scrapy.Request(url=url, callback=self.parse)
@@ -16,56 +19,55 @@ class SpiderTouTiao(scrapy.Spider):
     def parse(self, response):
         self.log('====>>>> get information from page: %s' % response.url)
 
-        news_hot_list = response.css("div.wcommonFeed > ul > li")
-        news_list = response.css("div#headLineDefault > ul.FNewMTopLis > ul > li")
+        news_info = json.loads(response.body_as_unicode())
 
-        for item in news_hot_list:
-            news_link = item.css('a')
-            for li in news_link:
-                title = li.css('a::text').extract_first()
-                link = li.css('a::attr(href)').extract_first()
-                self.log('====>>>> title: %s' % title)
-                self.log('====>>>> link: %s' % link)
-                yield scrapy.Request(url=link, callback=self.parse_1)
+        base_url = "https://www.toutiao.com"
+        for info in news_info["data"]:
+            url_temp = base_url + info["source_url"]
+            yield scrapy.Request(url=url_temp, callback=self.parse_1)
 
     def parse_1(self, response):
         self.log('++++====>>>> get information from page: %s' % response.url)
 
-        title = response.css('div.yc_tit > h1::text').extract_first()
-        contents = response.css('div.yc_con_txt > p')
-        time = response.css('div.yc_tit > p > span::text').extract_first()
-        source = response.css('div.yc_tit > p > a::text').extract_first()
+        temp = re.findall(pattern='var BASE_DATA = ({.+});</script>', string=response.body.decode('utf-8'), flags=re.M | re.U | re.S)
 
-        if title is None:
-            title = response.css('div#artical > h1::text').extract_first()
-            contents = response.css('div#main_content.js_selection_area > p')
-            time = response.css('div#artical_sth > p.p_time > span[itemprop="datePublished"]::text').extract_first()
-            source = response.css('div#artical_sth > p.p_time > span[itemprop="publisher"] > span[itemprop="name"]> a::text').extract_first()
+        # temp = re.findall(pattern='articleInfo: ({.+})', string=response.body.decode('utf-8'), flags=re.M | re.U | re.S)
 
-        pic = None
-        for p in contents:
-            temp = p.css('p.detailPic > img::attr(src)').extract_first()
-            if temp is not None:
-                pic = temp
-
-        contents_txt = ''
-        temp = []
-        for cont in contents:
-            paragraph = cont.css('p::text').extract_first()
-            if paragraph is not None:
-                temp.append(paragraph)
         if len(temp) > 0:
-            contents_txt = '\n'.join(c for c in temp)
+            temp_str = temp[0].replace(".replace(/<br \/>/ig, '')", '')
+            # self.log(temp_str)
 
-        item = {'news_url': response.url,
+            temp_dict = yaml.load(temp_str)
+            title = temp_dict['articleInfo']['title']
+            content = temp_dict['articleInfo']['content']
+            source = temp_dict['articleInfo']['subInfo']['source']
+            time = temp_dict['articleInfo']['subInfo']['time']
+            image_url = ''
+            video_url = ''
+            comment_count = temp_dict['shareInfo']['commentCount']
+            tag_dict = temp_dict['articleInfo']['tagInfo']['tags']
+            tags = []
+            if len(tag_dict) > 0:
+                for t in tag_dict:
+                    tags.append(t['name'])
+            tags_str = '|'.join(tags)
+
+            item = {
+                'spider_name': self.name,
+                'news_url': response.url,
                 'title': title,
                 'source': source,
                 'time': time,
-                'content': contents_txt,
-                'image_url': pic,
-                'video_url': pic}
+                'content': content,
+                'image_url': image_url,
+                'video_url': video_url,
+                'comment_count': comment_count,
+                'tags': tags_str
+            }
+            return self.valid_item(item)
+        else:
+            self.log("++++====>>>> lalal")
 
-        return self.valid_item(item)
 
     def valid_item(self, item):
         for key in item.keys():

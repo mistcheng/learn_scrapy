@@ -8,7 +8,8 @@
 import datetime
 import pymysql
 import settings
-from scrapy import log
+from codecs import open
+import json
 
 
 class NewsPipeline(object):
@@ -23,37 +24,80 @@ class NewsPipeline(object):
 
     def process_item(self, item, spider):
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        test = "123"
-        sql = "insert into news.ifeng(title, news_url, source, time, content, image_url, video_url, time_in) " \
-              "values('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (
-                item['title'],
-                item['news_url'],
-                item['source'],
-                item['time'],
-                item['content'],
-                item['image_url'],
-                item['video_url'],
-                now)
 
-        # sql = "insert into news.ifeng(title, source, time, content, image, video, time_in) " \
-        #       "values('%s', '%s', '%s', '%s', '%s', '%s', '%s')"
+        if item['spider_name'] == 'news_ifeng':
+            sql = "insert into news.ifeng(title, news_url, source, time, content, image_url, video_url, time_in) " \
+                  "values('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (
+                    item['title'],
+                    item['news_url'],
+                    item['source'],
+                    item['time'],
+                    item['content'],
+                    item['image_url'],
+                    item['video_url'],
+                    now)
+            print(sql)
 
-        print(sql)
+            try:
+                self.cursor.execute(sql)
+                self.connect.commit()
+            except Exception as e:
+                print("++++====>>>> Error %d: %s" % (e.args[0], e.args[1]))
 
-        try:
-            # self.my_db_cursor.execute(sql, (item['title'].encode('utf-8'),
-            #                                 item['source'].encode('utf-8'),
-            #                                 item['time'].encode('utf-8'),
-            #                                 item['content'].encode('utf-8'),
-            #                                 item['image'].encode('utf-8'),
-            #                                 item['video'].encode('utf-8'),
-            #                                 now.encode('utf-8')))
-            self.cursor.execute(sql)
-            self.connect.commit()
-        except Exception as e:
-            print("++++====>>>> Error %d: %s" % (e.args[0], e.args[1]))
+            # finally:
+            #     self.connect.close()
+        elif item['spider_name'] == 'news_toutiao':
+            sql = "insert into news.toutiao(title, news_url, source, time, content, image_url, video_url, time_in, comment_count, tags) " \
+                  "values('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (
+                      item['title'],
+                      item['news_url'],
+                      item['source'],
+                      item['time'],
+                      item['content'],
+                      item['image_url'],
+                      item['video_url'],
+                      now,
+                      item['comment_count'],
+                      item['tags']
+            )
+            print(sql)
 
-        # finally:
-        #     self.connect.close()
+            try:
+                self.cursor.execute(sql)
+                self.connect.commit()
+            except Exception as e:
+                print("++++====>>>> Error %d: %s" % (e.args[0], e.args[1]))
 
+            # finally:
+            #     self.connect.close()
+        elif item['spider_name'] == 'poem':
+            print("\n++++>>>> hahh \n")
+            # with open('/Users/wind/WORK/code/learn_scrapy/data/poem.txt', 'a+', 'utf-8') as ouf:
+            #     # for k, v in item.items():
+            #     #     ouf.write(k + ">>><<<" + v + "\n")
+            #     ouf.write(json.dumps(item))
+            #
+            # sql = "insert into news.poem(poem_url, title, dynasty, author, author_url, content, like_count, tags, translation, translation_like, time_in) " \
+            #       "values('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (
+            #           item['poem_url'],
+            #           item['title'],
+            #           item['dynasty'],
+            #           item['author'],
+            #           item['author_url'],
+            #           item['content'],
+            #           item['like_count'],
+            #           item['tags'],
+            #           item['translation'],
+            #           item['translation_like'],
+            #           now)
+            # print(sql)
+            #
+            # try:
+            #     self.cursor.execute(sql)
+            #     self.connect.commit()
+            # except Exception as e:
+            #     print("++++====>>>> Error %d: %s" % (e.args[0], e.args[1]))
+
+        else:
+            print('++++====>>>> hahaah')
         return item

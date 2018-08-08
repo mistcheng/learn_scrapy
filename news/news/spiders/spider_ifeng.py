@@ -8,7 +8,8 @@ class SpiderIfeng(scrapy.Spider):
 
     def start_requests(self):
         urls = [
-            'http://www.sina.com.cn/',
+            'http://www.ifeng.com/',
+            # 'https://www.toutiao.com/ch/news_hot/'
         ]
         for url in urls:
             yield scrapy.Request(url=url, callback=self.parse)
@@ -56,13 +57,16 @@ class SpiderIfeng(scrapy.Spider):
         if len(temp) > 0:
             contents_txt = '\n'.join(c for c in temp)
 
-        item = {'news_url': response.url,
+        item = {
+                'spider_name': self.name,
+                'news_url': response.url,
                 'title': title,
                 'source': source,
                 'time': time,
                 'content': contents_txt,
                 'image_url': pic,
-                'video_url': pic}
+                'video_url': pic
+        }
 
         return self.valid_item(item)
 
