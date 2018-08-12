@@ -69,13 +69,13 @@ class NewsPipeline(object):
             sql = """
                         insert into news.poem(url, type, title, content, author_name, author_info, like_count, tags, 
                         translation, reference, shangxi, background) values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                        %s) ON DUPLICATE KEY UPDATE title=%s, content=%s
+                        %s) ON DUPLICATE KEY UPDATE title=%s, content=%s, translation=%s
                         """
 
             args = (item['url'], item['type'], item['title'], item['content'], item['author_name'], item['author_info'],
                     item['like_count'], item['tags'], item['translation'], item['reference'], item['shangxi'], item['background'],
-                    item['title'], item['content'])
-            # print(sql)
+                    item['title'], item['content'], item['translation'])
+            # print(sql % args)
 
             try:
                 self.cursor.execute(sql, args)
