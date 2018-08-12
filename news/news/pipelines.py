@@ -66,32 +66,22 @@ class NewsPipeline(object):
             # finally:
             #     self.connect.close()
         elif item['spider_name'] == 'poem':
-            print("\n++++>>>> hahh \n")
-            # with open('/Users/wind/WORK/code/learn_scrapy/data/poem.txt', 'a+', 'utf-8') as ouf:
-            #     # for k, v in item.items():
-            #     #     ouf.write(k + ">>><<<" + v + "\n")
-            #     ouf.write(json.dumps(item))
-            #
-            # sql = "insert into news.poem(poem_url, title, dynasty, author, author_url, content, like_count, tags, translation, translation_like, time_in) " \
-            #       "values('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (
-            #           item['poem_url'],
-            #           item['title'],
-            #           item['dynasty'],
-            #           item['author'],
-            #           item['author_url'],
-            #           item['content'],
-            #           item['like_count'],
-            #           item['tags'],
-            #           item['translation'],
-            #           item['translation_like'],
-            #           now)
+            sql = """
+                        insert into news.poem(url, type, title, content, author_name, author_info, like_count, tags, 
+                        translation, reference, shangxi, background) values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
+                        %s) ON DUPLICATE KEY UPDATE title=%s, content=%s
+                        """
+
+            args = (item['url'], item['type'], item['title'], item['content'], item['author_name'], item['author_info'],
+                    item['like_count'], item['tags'], item['translation'], item['reference'], item['shangxi'], item['background'],
+                    item['title'], item['content'])
             # print(sql)
-            #
-            # try:
-            #     self.cursor.execute(sql)
-            #     self.connect.commit()
-            # except Exception as e:
-            #     print("++++====>>>> Error %d: %s" % (e.args[0], e.args[1]))
+
+            try:
+                self.cursor.execute(sql, args)
+                self.connect.commit()
+            except Exception as e:
+                print("++++====>>>> Error %d: %s" % (e.args[0], e.args[1]))
 
         else:
             print('++++====>>>> hahaah')
