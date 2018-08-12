@@ -26,20 +26,19 @@ class NewsPipeline(object):
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         if item['spider_name'] == 'news_ifeng':
-            sql = "insert into news.ifeng(title, news_url, source, time, content, image_url, video_url, time_in) " \
-                  "values('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (
-                    item['title'],
-                    item['news_url'],
-                    item['source'],
-                    item['time'],
-                    item['content'],
-                    item['image_url'],
-                    item['video_url'],
-                    now)
-            print(sql)
+            sql = """
+                insert into news.ifeng(title, news_url, source, time, content, image_url, video_url, time_in) 
+                values(%s, %s, %s, %s, %s, %s, %s, %s) 
+                ON DUPLICATE KEY UPDATE title=%s, source=%s, time=%s, content=%s
+            """
+
+            args = (item['title'], item['news_url'], item['source'], item['time'], item['content'], item['image_url'],
+                   item['video_url'], now, item['title'], item['source'], item['time'], item['content'])
+
+            # print(sql)
 
             try:
-                self.cursor.execute(sql)
+                self.cursor.execute(sql, args)
                 self.connect.commit()
             except Exception as e:
                 print("++++====>>>> Error %d: %s" % (e.args[0], e.args[1]))
@@ -47,23 +46,19 @@ class NewsPipeline(object):
             # finally:
             #     self.connect.close()
         elif item['spider_name'] == 'news_toutiao':
-            sql = "insert into news.toutiao(title, news_url, source, time, content, image_url, video_url, time_in, comment_count, tags) " \
-                  "values('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')" % (
-                      item['title'],
-                      item['news_url'],
-                      item['source'],
-                      item['time'],
-                      item['content'],
-                      item['image_url'],
-                      item['video_url'],
-                      now,
-                      item['comment_count'],
-                      item['tags']
-            )
-            print(sql)
+            sql = """
+            insert into news.toutiao(title, news_url, source, time, content, image_url, video_url, time_in, 
+                  comment_count, tags) values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) 
+                  ON DUPLICATE KEY UPDATE title=%s, source=%s, time=%s, content=%s
+            """
+
+            args = (item['title'], item['news_url'], item['source'], item['time'], item['content'], item['image_url'],
+                    item['video_url'], now, item['comment_count'], item['tags'], item['title'], item['source'],
+                    item['time'], item['content'])
+            # print(sql)
 
             try:
-                self.cursor.execute(sql)
+                self.cursor.execute(sql, args)
                 self.connect.commit()
             except Exception as e:
                 print("++++====>>>> Error %d: %s" % (e.args[0], e.args[1]))
